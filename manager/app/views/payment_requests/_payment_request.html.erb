@@ -1,0 +1,34 @@
+<div id="<%= dom_id payment_request %>">
+  <p>
+    <strong>Amount:</strong>
+    <%= payment_request.amount %>
+  </p>
+
+  <p>
+    <strong>Currency:</strong>
+    <%= payment_request.currency %>
+  </p>
+
+  <p>
+    <strong>Description:</strong>
+    <%= payment_request.description %>
+  </p>
+
+  <p>
+    <strong>Status:</strong>
+    <%= payment_request.status %>
+  </p>
+
+  <% if payment_request.pending? %>	
+    <div class="container">
+      <div class="row">
+        <div class="col-sm">
+          <%= button_to "Accept", payment_request_accept_path(payment_request), method: :post, class: "btn btn-outline-primary btn-lg" %>
+        </div>
+        <div class="col-sm">
+          <%= button_to "Reject", payment_request_reject_path(payment_request), method: :post, class: "btn btn-outline-danger btn-lg"%>
+        </div>
+      </div>
+    </div>
+  <% end %>	
+</div>

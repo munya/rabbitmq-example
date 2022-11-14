@@ -1,0 +1,15 @@
+<p style="color: green"><%= notice %></p>
+
+<div class="cal-lg-8 mx-auto">
+  <h1>Payment requests</h1>
+  <div id="pyment-requests">
+    <% @payment_requests.each do |payment_request| %>
+      <div class="card shadow mb-3">
+        <div class="card-body">
+          <%= render payment_request %>
+        </div>
+      </div> 
+    <% end %>
+  </div>
+</div>
+

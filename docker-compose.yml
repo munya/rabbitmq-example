@@ -1,0 +1,133 @@
+version: "3.8"
+
+services:
+
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=pass
+    ports:
+      - '5432:5432'
+    networks:
+      - backend
+    volumes:
+      - data-volume:/var/lib/db
+
+  redis:
+    image: redis
+    networks:
+      - backend
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - backend
+    volumes:
+      - "./rabbit_enabled_plugins:/etc/rabbitmq/enabled_plugins" 
+
+  contractor:
+    image: contractor
+    build:
+      context: ./contractor/
+      dockerfile: ./Dockerfile
+    stdin_open: true
+    tty: true
+    command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -p 3000 -b '0.0.0.0'"
+    volumes:
+      - .:/usr/src/app
+      - bundle:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - backend
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      RABBITMQ: rabbitmq
+
+  manager:
+    image: manager
+    build:
+      context: ./manager/
+      dockerfile: ./Dockerfile
+    stdin_open: true
+    tty: true
+    command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -p 3001 -b '0.0.0.0'"
+    volumes:
+      - .:/usr/src/app
+      - bundle:/usr/local/bundle
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - backend
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      RABBITMQ: rabbitmq
+
+  contractor-worker:
+    image: contractor
+    build:
+      context: ./contractor/
+      dockerfile: ./Dockerfile
+    stdin_open: true
+    tty: true
+    command: bash -c "bundle exec bin/rake rabbitmq:setup && bundle exec rake amqp"
+    volumes:
+      - .:/usr/src/app
+      - bundle:/usr/local/bundle
+    networks:
+      - backend
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      RABBITMQ: rabbitmq
+
+  manager-worker:
+    image: manager
+    build:
+      context: ./manager/
+      dockerfile: ./Dockerfile
+    stdin_open: true
+    tty: true
+    command: bash -c "bundle exec bin/rake rabbitmq:setup && bundle exec rake amqp"
+    volumes:
+      - .:/usr/src/app
+      - bundle:/usr/local/bundle
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - backend
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      RABBITMQ: rabbitmq
+
+networks:
+  backend:
+
+volumes:
+  data-volume:
+  redis_data:
+  bundle:
